@@ -1,12 +1,16 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, create_engine
+from sqlalchemy import Column
+from sqlalchemy import create_engine
+from sqlalchemy import bindparam
 from sqlalchemy import Numeric
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import ForeignKey
 from sqlalchemy import select
+from sqlalchemy import update
+from sqlalchemy import delete
 
 Base = declarative_base()
 
@@ -127,22 +131,43 @@ for cliente in clientes_curitiba:
     nome, saldo = cliente[1], cliente[0]
     print(f"Nome: {nome.title()}, Saldo: R${saldo}")
 
-# session.scalars retorna apenas um campo específico
+# session.scalars retorna apenas um campo específico, neste caso o primeiro selecionado no join
 for cliente in session.scalars(stmt_join):
     print(f'Saldo {cliente}')
-
-# alterando dados
-
-stmt = select(Clients).where(Clients.nome == 'dexter araujo')
-dexter = session.scalars(stmt)
-dexter.nome = 'dexter araujo franco'
-session.commit()
-print(dexter.nome)
 
 stmt = select(Clients).where(Clients.nome == 'dexter araujo franco')
 for user in session.scalars(stmt):
     print(user)
-'''
-for row in dexter:
-    row.nome = 'dois'
-'''
+
+stmt = session.execute(select(Clients.nome, Clients.cpf).order_by(Clients.nome))
+for row in stmt:
+    print(f'Nome: {row[0].title()}, CPF: {row[1]}')
+
+stmt = session.execute(
+    select(Clients.nome, Contas)
+    .join(Clients)
+    )
+for row in stmt:
+    print(row)
+
+# alterando dados
+stmt_update = session.execute(
+    update(Clients)
+    .where(Clients.nome == 'dexter araujo').values(cpf='12345678998')
+    )
+stmt = select(Clients).where(Clients.nome == 'dexter araujo')
+dexter_update = session.execute(stmt)
+for row in dexter_update:
+    print(row)
+
+# deletando
+
+#session.delete(pedro)
+stmt = session.execute(
+    delete(Clients).where(Clients.nome == 'fabio martins')
+)
+stmt_delete = session.execute(select(Clients.nome))
+for row in stmt_delete:
+    print(row)
+
+
